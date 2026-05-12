@@ -1,0 +1,116 @@
+Sub PerformVoid_For74AAProcess(ByRef FlagError As Boolean, ByRef FlagHistoryVoid As Boolean, ByVal Draft As String, ByVal ICN As String, ByVal strPaidAmount As String, ByVal ProcDate As String)
+    Dim FlagFound As Boolean, K As Integer, ValidLline As Integer, Count2 As Integer, EditWarning As String = ""
+    'MsgBox DateDiff("d", CDate(ProcDate), CDate(Format(Now, "MM/DD,YY")))
+    'MsgBox(DateTime.Today)
+    FlagError = False
+    WriteLog("Void starts for draft " & Draft & "and ICN " & ICN)
+    WriteLog("Processed Date " & ProcDate & " And Date.Today: " & CStr(CDate(System.TimeZoneInfo.ConvertTime(Now, TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time")))))
+    If CDate(ProcDate) = CDate(System.TimeZoneInfo.ConvertTime(Now, TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time"))) Then 'CDate(DateTime.Today) Then   ''''''74 Void
+        SendClear()
+        SendClear()
+        SendKeyes("MPI," & CurrentClaim(0).Policy & "," & CurrentClaim(0).SSN & "," & CurrentClaim(0).EmployeeName & "," & CurrentClaim(0).Relationship & "," & Draft & ",I" & ICN, 2, 2)
+        SendEnter()
+        WriteLog("Control Line for Void = " + GetText(2, 1, 80, True))
+        If InStr(GetText(24, 1, 80), "REVERSAL ON FILE") = 0 Then 'Already 74 void is performed
+            SendKeyes("GZN", 2, 2)
+            SendKeyes("74", 3, 78)
+            SendEnter()
+            WriteLog("Before 74 void MPP for draft " & Draft & " and ICN " & ICN, True)
+            WriteLog(GetTextRect())
+            Count2 = 0
+            EditWarning = ""
+            Do
+                SendEnter()
+                If Count2 > 6 Then Exit Do
+                If InStr(EditWarning, GetText(24, 1, 80, True)) > 0 Then Exit Do
+                EditWarning = EditWarning & GetText(24, 1, 80, True)
+                Count2 = Count2 + 1
+            Loop
+            If Count2 > 6 Then
+                strResearchComments = EditWarning
+                strResearchStatus = "skipped"
+                FlagError = True
+                Exit Sub
+            End If
+            If InStr(EditWarning, "W118 OK TO PAY") > 0 Then
+                SendMPP()
+                If InStr(GetText(24, 1, 80), "W134ALL FILES UPDATED") = 0 Then
+                    strResearchComments = GetText(24, 1, 80, True)
+                    strResearchStatus = "skipped"
+                    FlagError = True
+                    Exit Sub
+                Else
+                    FlagHistoryVoid = True
+                End If
+            Else
+                strResearchComments = EditWarning
+                strResearchStatus = "skipped"
+                FlagError = True
+                Exit Sub
+            End If
+ 
+            WriteLog("After 74 void MPP for draft " & Draft & " and ICN " & ICN, True)
+        End If
+    ElseIf DateDiff("d", CDate(ProcDate), CDate(DateTime.Today)) < 3 Then
+        '''''If Check not issued then 71 Void else 69/70
+ 
+        SendClear()
+        SendClear()
+        SendKeyes("MPI," & CurrentClaim(0).Policy & "," & CurrentClaim(0).SSN & "," & CurrentClaim(0).EmployeeName & "," & CurrentClaim(0).Relationship & "," & Draft & ",I" & ICN, 2, 2)
+        SendEnter()
+        WriteLog("Control Line for Void = " + GetText(2, 1, 80, True))
+        If GetText(22, 36, 2, True) <> "71" Then 'Already 71 void has been performed
+            SendKeyes("GZ3", 2, 2)
+            SendKeyes("71", 3, 78)
+            SendEnter()
+            WriteLog("Before 71 void MPP for draft " & Draft & " and ICN " & ICN, True)
+            WriteLog(GetTextRect())
+            Count2 = 0
+            EditWarning = ""
+            Do
+                SendEnter()
+                If Count2 > 6 Then Exit Do
+                If InStr(EditWarning, GetText(24, 1, 80, True)) > 0 Then Exit Do
+                EditWarning = EditWarning & GetText(24, 1, 80, True)
+                Count2 = Count2 + 1
+            Loop
+            If Count2 > 6 Then
+                strResearchComments = EditWarning
+                strResearchStatus = "skipped"
+                FlagError = True
+                Exit Sub
+            End If
+            If InStr(EditWarning, "W118 OK TO PAY") > 0 Then
+                SendMPP()
+                If InStr(GetText(24, 1, 80), "W134ALL FILES UPDATED") = 0 Then
+                    strResearchComments = GetText(24, 1, 80, True)
+                    strResearchStatus = "skipped"
+                    FlagError = True
+                    Exit Sub
+                Else
+                    FlagHistoryVoid = True
+                End If
+            Else
+                strResearchComments = EditWarning
+                strResearchStatus = "skipped"
+                FlagError = True
+                Exit Sub
+            End If
+            WriteLog("After 71 void MPP for draft " & Draft & " and ICN " & ICN, True)
+            'End If
+        Else
+ 
+            ''''check for 74 or 
+        End If
+    Else
+        strResearchComments = "Not eligiable for 74 and 71"
+        strResearchStatus = "skipped"
+        FlagError = True
+        Exit Sub
+    End If
+    WriteLog("Void ends for draft " & Draft & " and ICN " & ICN)
+    'PullMHI(CurrentClaim(0).ICN)
+    'CurrentClaimCount = ReadMHI(CurrentClaim)
+    'WriteLog("MHI READ START After voiding draft " & Draft & " in ICN " & ICN)
+    'WriteLog(GetMHI(CurrentClaim, CurrentClaimCount))
+End Sub
