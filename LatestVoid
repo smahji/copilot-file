@@ -1,0 +1,172 @@
+GetClaimDetails(CurrentClaimDetails, ICN)
+            GetModifierFromEDS1(CurrentClaimModifier, ICN)
+ 
+#Region "Session check"
+ 
+            Dim checkfor6970 As Boolean = False
+            checkfor6970 = Check6970void_For74void(ICN)
+            If checkfor6970 Then
+ 
+ 
+                FlagMHI = True
+                ReDimension(CurrentClaim, ICN)
+                PullMHI(ICN)
+                If Not getMHIinMemory(GlobalMemoryDump, CurrentClaim, ICN) Then  'Modified on 05th August to reduce MHI control Line
+                    CurrentClaimCount = ReadMHI(CurrentClaim)
+                    SetMHIinMemory(GlobalMemoryDump, CurrentClaim, ICN)
+                Else
+                    SetMHIinMemory(GlobalMemoryDump, CurrentClaim, ICN)
+                End If
+ 
+ 
+ 
+                'PullMHI(ICN)
+                'ReDimension(CurrentClaim, ICN)
+                'PullMHI(ICN)
+                'Dim JLL As Integer = ReadMHI(CurrentClaim)
+ 
+                GetDraftDetailsInMemory(CurrentClaimDraftDetails, CurrentClaim, CurrentClaimCount)
+                If DetermineWhetherCurrentClaimIsInPend71or74(CurrentClaimDraftDetails, GetMaxSuffix(ICN)) Then
+                    '''check 74 or 71 update database
+ 
+                    'REMOVEDRAFTICNSKIPPED(ICN)
+                    'strResearchStatus = "SKIPPED"
+                    'strResearchComments = "CLAIM IS in pend 71"
+                    'Comment = strResearchComments
+                    ''InsertData(ICN, Engine, Office, Processable, IsCA, isGR, isER, isUP, isLP, isUnderPayment, isZeroPayment,
+                    ''       HistoryICNList, isProcessed, DateResearch, DateProcess, Comment, GetNTID(), SubRogationRemarkCode,
+                    ''       isInvestigateCob, IsRCCA, AmountToBeAdjusted, is30LineReqd, is30LineToBePlaced)
+                    'MyForm.updateStatus("Updating Database")
+                    'updateSecondaryTable(ICN, Engine, Office, Processable, IsCA, isEW, isGR, isER, isUP, isLP, isUnderPayment,
+                    '                     isZeroPayment, HistoryICNList, isProcessed, DateResearch, DateProcess, Comment,
+                    '                     PaymentComment, GetNTID, SubRogationRemarkCode, isInvestigateCob, IsRCCA,
+                    '                     AmountToBeAdjusted, is30LineReqd, is30LineToBeused,
+                    '                     isPickedUp, Policy, Result, SuffixCount, Locality, IsOverpayment, IsOON, IsPgpolicy, Isbilltype, DBORGID, PCValue, PCCmd)
+                    Exit Sub
+                End If
+                Dim curdate As String = String.Format("{0:MM/dd/yy}", DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time"))
+                For IOM As Integer = LBound(CurrentClaim) To UBound(CurrentClaim)
+                    Dim _checkcurrentclaimAdjusterID As String = CurrentClaim(IOM).AdjusterID
+                    If _checkcurrentclaimAdjusterID = "008273" AndAlso CDbl(CurrentClaim(IOM).PaidAmount) > 0 Then
+                        Dim Draftnumber As String = CurrentClaim(IOM).Draft
+                        Dim draftprocessdate As String = CurrentClaim(IOM).DateOfProcessing
+ 
+                        'Dim checkfor6970 As Boolean = False
+                        'checkfor6970 = Check6970void_For74void(ICN)
+                        'If checkfor6970 Then
+                        PerformVoid_For74AAProcess(FlagError, flagHistoryVoid, Draftnumber, ICN, "100", draftprocessdate)
+                        If FlagError Then
+                            ''''skip
+                        End If
+                        If flagHistoryVoid Then
+ 
+                            '''processed
+                        End If
+                        'End If
+ 
+ 
+                    End If
+ 
+                    'For K As Integer = LBound(CurrentClaim) To UBound(CurrentClaim)
+ 
+                    '    If CurrentClaim(K).DateOfProcessing = curdate AndAlso CurrentClaim(K).Suffix = CurrentClaim(IOM).Suffix Then
+                    '        CurrentClaim(IOM).DateOfProcessing = CurrentClaim(K).DateOfProcessing
+                    '        CurrentClaim(IOM).Draft = CurrentClaim(K).Draft
+                    '        Exit For
+                    '    End If
+                    'Next
+                Next
+ 
+                If flagHistoryVoid Then
+                    Exit Sub
+                    '''processed
+                End If
+            End If
+#End Region
+ 
+ 
+            GetClaimDetails(CurrentClaimDetails, ICN)
+            GetModifierFromEDS1(CurrentClaimModifier, ICN)
+ 
+#Region "Session check"
+ 
+            Dim checkfor6970 As Boolean = False
+            checkfor6970 = Check6970void_For74void(ICN)
+            If checkfor6970 Then
+ 
+ 
+                FlagMHI = True
+                ReDimension(CurrentClaim, ICN)
+                PullMHI(ICN)
+                If Not getMHIinMemory(GlobalMemoryDump, CurrentClaim, ICN) Then  'Modified on 05th August to reduce MHI control Line
+                    CurrentClaimCount = ReadMHI(CurrentClaim)
+                    SetMHIinMemory(GlobalMemoryDump, CurrentClaim, ICN)
+                Else
+                    SetMHIinMemory(GlobalMemoryDump, CurrentClaim, ICN)
+                End If
+ 
+ 
+ 
+                'PullMHI(ICN)
+                'ReDimension(CurrentClaim, ICN)
+                'PullMHI(ICN)
+                'Dim JLL As Integer = ReadMHI(CurrentClaim)
+ 
+                GetDraftDetailsInMemory(CurrentClaimDraftDetails, CurrentClaim, CurrentClaimCount)
+                If DetermineWhetherCurrentClaimIsInPend71or74(CurrentClaimDraftDetails, GetMaxSuffix(ICN)) Then
+                    '''check 74 or 71 update database
+ 
+                    'REMOVEDRAFTICNSKIPPED(ICN)
+                    'strResearchStatus = "SKIPPED"
+                    'strResearchComments = "CLAIM IS in pend 71"
+                    'Comment = strResearchComments
+                    ''InsertData(ICN, Engine, Office, Processable, IsCA, isGR, isER, isUP, isLP, isUnderPayment, isZeroPayment,
+                    ''       HistoryICNList, isProcessed, DateResearch, DateProcess, Comment, GetNTID(), SubRogationRemarkCode,
+                    ''       isInvestigateCob, IsRCCA, AmountToBeAdjusted, is30LineReqd, is30LineToBePlaced)
+                    'MyForm.updateStatus("Updating Database")
+                    'updateSecondaryTable(ICN, Engine, Office, Processable, IsCA, isEW, isGR, isER, isUP, isLP, isUnderPayment,
+                    '                     isZeroPayment, HistoryICNList, isProcessed, DateResearch, DateProcess, Comment,
+                    '                     PaymentComment, GetNTID, SubRogationRemarkCode, isInvestigateCob, IsRCCA,
+                    '                     AmountToBeAdjusted, is30LineReqd, is30LineToBeused,
+                    '                     isPickedUp, Policy, Result, SuffixCount, Locality, IsOverpayment, IsOON, IsPgpolicy, Isbilltype, DBORGID, PCValue, PCCmd)
+                    Exit Sub
+                End If
+                Dim curdate As String = String.Format("{0:MM/dd/yy}", DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time"))
+                For IOM As Integer = LBound(CurrentClaim) To UBound(CurrentClaim)
+                    Dim _checkcurrentclaimAdjusterID As String = CurrentClaim(IOM).AdjusterID
+                    If _checkcurrentclaimAdjusterID = "008273" AndAlso CDbl(CurrentClaim(IOM).PaidAmount) > 0 Then
+                        Dim Draftnumber As String = CurrentClaim(IOM).Draft
+                        Dim draftprocessdate As String = CurrentClaim(IOM).DateOfProcessing
+ 
+                        'Dim checkfor6970 As Boolean = False
+                        'checkfor6970 = Check6970void_For74void(ICN)
+                        'If checkfor6970 Then
+                        PerformVoid_For74AAProcess(FlagError, flagHistoryVoid, Draftnumber, ICN, "100", draftprocessdate)
+                        If FlagError Then
+                            ''''skip
+                        End If
+                        If flagHistoryVoid Then
+ 
+                            '''processed
+                        End If
+                        'End If
+ 
+ 
+                    End If
+ 
+                    'For K As Integer = LBound(CurrentClaim) To UBound(CurrentClaim)
+ 
+                    '    If CurrentClaim(K).DateOfProcessing = curdate AndAlso CurrentClaim(K).Suffix = CurrentClaim(IOM).Suffix Then
+                    '        CurrentClaim(IOM).DateOfProcessing = CurrentClaim(K).DateOfProcessing
+                    '        CurrentClaim(IOM).Draft = CurrentClaim(K).Draft
+                    '        Exit For
+                    '    End If
+                    'Next
+                Next
+ 
+                If flagHistoryVoid Then
+                    Exit Sub
+                    '''processed
+                End If
+            End If
+#End Region
