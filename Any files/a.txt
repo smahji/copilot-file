@@ -1,1 +1,30 @@
-
+"AutomationResponse":{
+	"automation":"EAS"
+	,"automationStatus":"HOLD"
+	,"claimStatus":"OPEN"
+	,"daysToHold":"NA"
+	,"inventoryControlNumber":"FY25554718"
+	,"lastTry":"false"
+	,"mcrEngineResponse":"NA"
+	,"owfId":"OWF-155448691"
+	,"sla":"NA"
+	,"waitTime":"NA"
+	,"workflowSystem":"EAS"
+	,"suffixMap":[ 
+	{
+		,"sfxCd":"Info/"
+		,"sfxNbr":"01"
+		,"sfxStatus":"HOLD"
+	},
+	{
+		,"sfxCd":"Info/"
+		,"sfxNbr":"02"
+		,"sfxStatus":"HOLD"
+	},
+	{
+		,"sfxCd":"Info/"
+		,"sfxNbr":"03"
+		,"sfxStatus":"HOLD"
+	}
+	] 
+}
