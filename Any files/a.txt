@@ -28,3 +28,152 @@
 	}
 	] 
 }
+
+
+
+    Public Sub UpdateData(ByVal icn As String, ByVal status As String, ByVal TPvalue As String, ByVal IsPGPolicy As Integer,
+                          ByVal ID As String, Engine As String, Payloc As String, ByVal locality As String, ByVal orgID As String, ByVal SuffixCount As Integer, owfId As String)
+
+        Dim clientCon As SqlConnection = New SqlConnection(ConfigurationManager.ConnectionStrings("clientDB").ConnectionString)
+        Dim clientConEWD As SqlConnection = New SqlConnection(ConfigurationManager.ConnectionStrings("hhhhDB").ConnectionString)
+
+        Try
+UpdData:    WriteLog("================= Entering " + GetCurrentMethod.Name + "====================")
+            Dim cmd1, cmd2 As SqlCommand
+            Dim query1, query2, query4 As String
+            Dim response As String = ""
+            If clientCon.State = ConnectionState.Closed Then clientCon.Open()
+            If clientConEWD.State = ConnectionState.Closed Then clientConEWD.Open()
+
+            If InStr(status, "Claim process by tool") > 0 Then
+                Dim jsonPayload As String = BuildOutboundPayload(
+                        icn:=icn, owfId:=owfId, automationStatus:="OK", claimStatus:="FINAL", lastTry:=False, fallbackSuffixStatus:="FINAL")
+
+                'Check for AV pend
+                '''''''''''Code''''''''''''''
+
+
+
+                'Check for overpayment
+                If InStr(strResearchStatus, "Overpayment adjustment performed") > 0 Then
+
+                    query1 = "Update CliffsKFCWaffles_Api set MSID='UBPdroid', Filter_Droid='Ran', ZeroPaid='Processed', InapCheckOut ='" + MachineName + "' WHERE ICN ='" + icn + "' "
+                    query2 = "Update WCRPaymentLog set SuffixCount='" + SuffixCount.ToString() + "' ,PickStatus= 'Done',IsPgpolicy='" + IsPGPolicy.ToString + "', Isbilltype='" + TPvalue + "' ,PaymentComment='" + strResearchStatus + "', Result='" + status + "', DateProcess=getdate(), UBStatus='" + status + "',HistoryICNList='" + FinalHistoryICNList + "',PCCmd='OVPT004 need to be sent' where ICN='" + icn + "' and ID='" + ID + "'"
+
+                    WriteLog(query1)
+                    cmd1 = New SqlCommand(query1, clientConEWD)
+                    Dim c As Integer = cmd1.ExecuteNonQuery()
+
+                    WriteLog("Query1 execution returned= " + c.ToString())
+                    cmd2 = New SqlCommand(query2, clientCon)
+                    WriteLog(query2)
+                    Dim d As Integer = cmd2.ExecuteNonQuery()
+                    'While b <> 1
+                    '    b = cmd2.ExecuteNonQuery
+                    'End While
+                    WriteLog("Query2 execution returned= " + d.ToString())
+                Else
+
+                    query1 = "Update CliffsKFCWaffles_Api set MSID='UBPdroid', Filter_Droid='Ran', ZeroPaid='Processed', InapCheckOut ='" + MachineName + "' WHERE ICN ='" + icn + "' "
+                    query2 = "Update WCRPaymentLog set SuffixCount='" + SuffixCount.ToString() + "' ,PickStatus= 'Done',IsPgpolicy='" + IsPGPolicy.ToString() + "', Isbilltype='" + TPvalue + "' ,PaymentComment='" + PaymentComment + "', Result='" + status + "', DateProcess=getdate(), UBStatus='" + status + "',HistoryICNList='" + FinalHistoryICNList + "' where ICN='" + icn + "' and ID='" + ID + "'"
+
+                    WriteLog(query1)
+                    cmd1 = New SqlCommand(query1, clientConEWD)
+                    Dim a As Integer = cmd1.ExecuteNonQuery()
+                    'While a <> 1
+                    '    a = cmd1.ExecuteNonQuery()
+                    'End While
+                    WriteLog("Query1 execution returned= " + a.ToString())
+                    cmd2 = New SqlCommand(query2, clientCon)
+                    WriteLog(query2)
+                    Dim b As Integer = cmd2.ExecuteNonQuery()
+                    'While b <> 1
+                    '    b = cmd2.ExecuteNonQuery
+                    'End While
+                    WriteLog("Query2 execution returned= " + b.ToString())
+                End If
+
+            Else
+                If status = "NDB login failed" Then
+                    Dim jsonPayload As String = BuildOutboundPayload(
+                        icn:=icn, owfId:=owfId, automationStatus:="EXCEPTION", claimStatus:="OPEN", lastTry:=False, fallbackSuffixStatus:="OPEN")
+
+                    query4 = "Update WCRPaymentLog set SuffixCount='" + SuffixCount.ToString() + "' ,PickStatus= @null, IsPgpolicy='" + IsPGPolicy.ToString + "', Isbilltype='" + TPvalue + "' , ResearchComment='Facility claim', Result=@null, UBStatus=@null,HistoryICNList='" + FinalHistoryICNList + "' where ICN='" + icn + "' and ID='" + ID + "'"
+                    'query3 = "Update CliffsKFCWaffles_Api [Status]=@stat, MSID= @msid, Filter_Droid='Ran', ZeroPaid='Skip', ORS='0', Priority_Flag='2', InapCheckOut ='" + MachineName + "' WHERE ICN ='" + icn + "' "
+
+
+                    cmd2 = New SqlCommand(query4, clientCon)
+                    cmd2.Parameters.AddWithValue("null", DBNull.Value)
+                    WriteLog(query4)
+                    Dim b As Integer = cmd2.ExecuteNonQuery()
+                    'While b <> 1
+                    '    b = cmd2.ExecuteNonQuery
+                    'End While
+                    WriteLog("Query2 execution returned= " + b.ToString())
+                Else                                              'SKIPPED ICNs
+                    query2 = "Update WCRPaymentLog set SuffixCount='" + SuffixCount.ToString() + "' ,PickStatus= 'Done', IsPgpolicy='" + IsPGPolicy.ToString + "', Isbilltype='" + TPvalue + "' , ResearchComment='" + status + "', Result='Skip', UBStatus='Skip',HistoryICNList='" + FinalHistoryICNList + "' where ICN='" + icn + "' and ID='" + ID + "'"
+                    If isHistoryICNVoided = True Then                  'PRIORITY 2 SKIPPED ICNs
+                        response = CallOptumAPI(icn, "2")
+                        If InStr(response.ToLower, "ewd manual routing event successfully dispatched") > 0 Then
+                            query1 = "Update CliffsKFCWaffles_Api set [Status]=@stat, MSID= @msid, Filter_Droid='Ran', ZeroPaid='Skip', ORS='1', Priority_Flag='2', InapCheckOut ='" + MachineName + "' WHERE ICN ='" + icn + "' "
+                            query2 = $"Update WCRPaymentLog set  SuffixCount='{SuffixCount.ToString()}' ,PickStatus= 'Done', IsPgpolicy='{IsPGPolicy.ToString()}', Isbilltype='{ TPvalue}' , ResearchComment='{status }', Result='Skip', UBStatus='Skip',HistoryICNList='{FinalHistoryICNList }' where ICN='{ icn }' and ID='{ ID }'"
+                        Else
+                            query1 = "Update CliffsKFCWaffles_Api set [Status]=@stat, MSID= @msid, Filter_Droid='Ran', ZeroPaid='Skip', ORS='0', Priority_Flag='2', InapCheckOut ='" + MachineName + "' WHERE ICN ='" + icn + "' "
+                        End If
+
+                    Else
+                        If status = "Sent to MARS EDITING" Or InStr(status, "EOC DATA DIFFERENT") > 0 Or InStr(status, "Bill Type 8 skipped") > 0 Then     'MARS EDIT SKIPPED ICNs
+                            Dim jsonPayload As String = BuildOutboundPayload(
+                                icn:=icn, owfId:=owfId, automationStatus:="HOLD", claimStatus:="OPEN", lastTry:=False, fallbackSuffixStatus:="OPEN", isMarsEditing:=True)
+
+                            query1 = "Update CliffsKFCWaffles_Api set [Status]=@stat, MSID= @msid, Filter_Droid='Ran', ZeroPaid='Skip', Priority_Flag='4', InapCheckOut ='" + MachineName + "' WHERE ICN ='" + icn + "' "
+                        Else                                        'OTHER SKIPPED ICNs
+                            Dim jsonPayload As String = BuildOutboundPayload(
+                                icn:=icn, owfId:=owfId, automationStatus:="OK", claimStatus:="OPEN", lastTry:=True, fallbackSuffixStatus:="OPEN", excludeFurtherOWFProcess:="false")
+
+                            response = CallOptumAPI(icn, "4")
+                            If InStr(response.ToLower, "ewd manual routing event successfully dispatched") > 0 Then
+                                query1 = "Update CliffsKFCWaffles_Api SET [Status]=@stat, MSID= @msid, Filter_Droid='Ran', ZeroPaid='Skip', ORS='1', Priority_Flag='4', InapCheckOut ='" + MachineName + "' WHERE ICN ='" + icn + "' "
+                            Else
+                                query1 = "Update CliffsKFCWaffles_Api SET [Status]=@stat, MSID= @msid, Filter_Droid='Ran', ZeroPaid='Skip', ORS='0', Priority_Flag='4', InapCheckOut ='" + MachineName + "' WHERE ICN ='" + icn + "' "
+                            End If
+                            'Dim APICallSuccess As Boolean = callOgaAPI(Payloc, orgID, "Hello", icn, Engine, "6", locality, "holmes_aut_u1")
+                            'If APICallSuccess = True Then
+                            '    query1 = "Update CliffsKFCWaffles_Api set [Status]=@stat, MSID= @msid, Filter_Droid='Ran', ZeroPaid='Skip', ORS='1', Priority_Flag='4', InapCheckOut ='" + MachineName + "' WHERE ICN ='" + icn + "' "
+                            'Else
+                            '    query1 = "Update CliffsKFCWaffles_Api set [Status]=@stat, MSID= @msid, Filter_Droid='Ran', ZeroPaid='Skip', ORS='0', Priority_Flag='4', InapCheckOut ='" + MachineName + "' WHERE ICN ='" + icn + "' "
+                            'End If
+                        End If
+
+                    End If
+
+                    cmd1 = New SqlCommand(query1, clientConEWD)
+                    cmd1.Parameters.AddWithValue("stat", DBNull.Value)
+                    cmd1.Parameters.AddWithValue("msid", DBNull.Value)
+                    WriteLog(query1)
+                    Dim a As Integer = cmd1.ExecuteNonQuery()
+                    'While a <> 1
+                    '    a = cmd1.ExecuteNonQuery()
+                    'End While
+                    WriteLog("Query1 execution returned= " + a.ToString())
+
+                    cmd2 = New SqlCommand(query2, clientCon)
+                    WriteLog(query2)
+                    Dim b As Integer = cmd2.ExecuteNonQuery()
+                    'While b <> 1
+                    '    b = cmd2.ExecuteNonQuery
+                    'End While
+                    WriteLog("Query2 execution returned= " + b.ToString())
+                End If
+
+            End If
+
+        Catch ex As Exception
+            WriteLog("EXCEPTION=>" + ex.Message)
+            GoTo UpdData
+        Finally
+            If clientCon.State = ConnectionState.Open Then clientCon.Close()
+            If clientConEWD.State = ConnectionState.Open Then clientConEWD.Close()
+            WriteLog("================= Exiting " + GetCurrentMethod.Name + "====================")
+        End Try
+    End Sub
